@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-sec-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-sec-app
+  template:
+    metadata:
+      labels:
+        app: my-sec-app
+    spec:
+      containers:
+      - name: my-sec-app
+        # REPLACE THIS WITH YOUR ECR URI
+        image: 959776247993.dkr.ecr.us-east-1.amazonaws.com/my-sec-app:latest
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-sec-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: my-sec-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
