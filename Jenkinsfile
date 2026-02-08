@@ -2,7 +2,8 @@ pipeline {
     agent any
     environment {
         // Name your image (e.g., "my-app")
-        IMAGE_NAME = "my-sec-app"
+        ECR_REGISTRY = "959776247993.dkr.ecr.us-east-1.amazonaws.com/my-sec-app"
+        IMAGE_NAME = "latest"
     }
     stages {
         stage('Checkout') {
