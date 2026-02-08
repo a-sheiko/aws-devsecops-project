@@ -41,6 +41,21 @@ pipeline {
                     sh "docker push $ECR_REGISTRY:$IMAGE_TAG"
                 }
             }
+        
+        }
+        stage('Deploy to EKS') {
+            steps {
+                script {
+                    // 1. Authenticate kubectl with the new cluster
+                    sh "aws eks update-kubeconfig --name devsecops-cluster --region us-east-1"
+                    
+                    // 2. Apply the deployment file (Deploy the App)
+                    sh "kubectl apply -f deployment.yaml"
+                    
+                    // 3. Verify it worked (Optional but good for logs)
+                    sh "kubectl get pods"
+                }
+            }
         }
     }
 }
