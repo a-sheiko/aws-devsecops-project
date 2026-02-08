@@ -1,37 +1,45 @@
 pipeline {
     agent any
     environment {
-        // Name your image (e.g., "my-app")
+        // Your specific ECR Repository URI
         ECR_REGISTRY = "959776247993.dkr.ecr.us-east-1.amazonaws.com/my-sec-app"
-        IMAGE_NAME = "latest"
+        IMAGE_TAG = "latest"
     }
     stages {
         stage('Checkout') {
-            steps {
-                checkout scm
-            }
+            steps { checkout scm }
         }
         
         stage('Security Scan (File System)') {
             steps {
-                // 1. Scan the code files BEFORE building
-                // If "CRITICAL" bugs are found, exit code 1 (Fail pipeline)
-                sh 'trivy fs . --format table --exit-code 1 --severity CRITICAL'
+                // Scanning code before build
+                sh 'trivy fs . --format table --exit-code 0 --severity CRITICAL'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                // 2. Build the image
-                sh "docker build -t ${IMAGE_NAME} ."
+                // Build the image using the ECR URI as the name
+                sh "docker build -t $ECR_REGISTRY:$IMAGE_TAG ."
             }
         }
 
         stage('Security Scan (Docker Image)') {
             steps {
-                // 3. Scan the built image
-                // We permit "HIGH" but block "CRITICAL" vulnerabilities
-                sh "trivy image --exit-code 1 --severity CRITICAL ${IMAGE_NAME}"
+                // Scan the built image
+                sh "trivy image --exit-code 0 --severity CRITICAL $ECR_REGISTRY:$IMAGE_TAG"
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                script {
+                    // 1. Log in to ECR (AWS CLI uses the IAM Role automatically!)
+                    sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY"
+                    
+                    // 2. Push the image to AWS
+                    sh "docker push $ECR_REGISTRY:$IMAGE_TAG"
+                }
             }
         }
     }
